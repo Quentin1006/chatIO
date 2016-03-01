@@ -1,0 +1,248 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      form#messagesForm { background: #000; padding: 3px; width: 50%;clear:both; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #messagesWrapper{
+        width:85%;
+      }
+      #messages, #previousMessages { width:50%;list-style-type: none; margin: 0; padding: 0; }
+      #messages li, #previousMessages li { padding: 10px 15px; }
+      #messages li:nth-child(odd), #previousMessages li:nth-child(odd) { background: #eee; }
+      #messages {
+        overflow:scroll;
+      }
+      #container{
+        width:700px;
+        margin:0 auto;
+      }
+      #namesWrapper{
+        float:left;
+        border:1px #ccc solid;
+        border-radius: 10px;
+        background:#f4f4f4;
+        padding:10px;
+        margin-left:20px;
+      }
+      #messagesWrapper{
+        display:none;
+      }
+      #userWrapper{
+        float:right;
+        border:1px #ccc solid;
+        border-radius: 10px;
+        background:#f4f4f4;
+        padding:10px;
+        margin-left:20px;
+        width:150px;
+        max-height:200px;
+        z-index:10;
+      }
+      .time{
+        position:relative;
+
+      }
+      .messageList{
+        width:85%;
+        height:400px;
+        overflow:scroll;
+      }
+      a{
+        text-decoration:none;
+      }
+      .chatWindow{
+        width:300px;
+        height:300px;
+        position:absolute;
+        right:155px;
+        border:solid 1px #ccc;
+        background:#f4f4f4;
+
+      }
+      .messageArea{
+        overflow:scroll;
+        height:80%;
+      }
+
+      .privateMessage{
+        position:absolute;
+        bottom:0px;
+        width:75%;
+        height:30px;
+      }
+      .sendPrivate{
+        position:absolute;
+        right:0;
+        bottom:0px;
+        height:30px;
+        width:25%;
+      }
+      .headerPrivate{
+          border-bottom:solid 1px #ccc;
+          padding:5px 10px;
+          font-size:14px;
+          color:#000;
+          background-color:#fff;
+      }
+      #welcomeUser{
+        padding:15px;
+        margin:10px;
+        background-color: #f4f4f4;
+        border: 1px solid #ccc;
+        border-radius:5px;
+
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div id="namesWrapper">
+        <h2>ChatIO</h2>
+        <p>Create Username:</p>
+        <div id="error"></div>
+        <form id="usernameForm">
+          <input size="35" id="username">
+          <input type="submit" value="Submit">
+        </form>
+      </div>
+    </div>
+
+    <div id="userWrapper">
+          <b>Online: </b><br/>
+          <div id="users">
+          </div>
+    </div>
+
+    <div id="messagesWrapper">
+      <div id="welcomeUser"></div>
+    <div class="messageList">
+    <ul id="previousMessages"></ul>
+    <ul id="messages"></ul>
+    </div>
+    <form id="messagesForm" action="">
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+  </div>
+    <script src="https://code.jquery.com/jquery-1.12.0.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+
+          
+      
+      
+
+    	//load the socket.io-client
+    	var socket = io();
+
+          $('body').on('click','a.singleUser', function (e){
+            var privateChatId = $(this).html();
+            $('.chatWindow').hide()
+            
+            var height = $(this).offset().top;
+            if(document.getElementById($(this).html())) {
+              $("#"+$(this).html()).show()
+            }
+            else{
+                $('body').append("<div class='chatWindow' id='"+$(this).html()+"'></div>")
+                $("#"+$(this).html()).css("top",height)
+                $("#"+$(this).html()).append("<p class='headerPrivate'>"+$(this).html()+"</p>").append("<div class='messageArea'></div>")
+                $("#"+$(this).html()).append("<form class='privateForm'><input type='text' class='privateMessage'/><button type='submit' class='sendPrivate'>Send</button></form>") 
+            }
+            
+            socket.emit('init private convo', $(this).html(), function(message){
+              console.log(message)
+            })
+             
+          });
+
+            $('body').on('submit', '.privateForm',function (e){
+              var privateChatId = $(this).prev().prev().html()
+              e.preventDefault();
+              socket.emit("send private message", {mess:$('#'+privateChatId+' .privateMessage').val(), sender: $('#'+privateChatId+' .headerPrivate').html()}) 
+               $('.privateMessage').val("");
+            });
+          
+
+            socket.on("emit private message", function (privateMessage){
+              var privateChatId = privateMessage.nickname
+              console.log(privateChatId)
+              console.log("rendering message from the server")
+              $('#'+privateChatId+' .messageArea').append("<li><strong>"+privateMessage.nickname+" says: </strong>" +privateMessage.message + " <small class='time'> " + privateMessage.date + " </small></li>")
+            })
+       
+
+            
+      
+
+      $('#usernameForm').submit(function(e){
+        e.preventDefault();
+        socket.emit('new user', $('#username').val(), function(bool, user){
+          if(bool == true){
+            $("#container").fadeOut();
+            $("#messagesWrapper").fadeIn();
+            $("#welcomeUser").html("<h1>Welcome <span id='connectedUser'>"+ user +"</span></h1>")
+          }
+          else{
+            $('#error').html('Username already taken...')
+          }
+
+
+        });
+
+      })
+      socket.on('alert connected', function (users){
+        console.log("alert connected")
+        $('#messages').append("<li><strong>"+users[users.length-1]+ " is connected </strong></li>")
+      })
+
+      socket.on('create user', function (users){
+        var html='';
+        for (var i=0; i< users.length;i++){
+          
+            html+= "<a class='singleUser' href='#'>"+users[i] +"</a><br>"
+          
+        }
+        $('#users').html(html);
+
+      socket.on('display messages', function (messages){
+         var mess="";
+         if(messages != []){
+            for (var i=0; i< messages.length;i++){
+              console.log("il y a bien des messages")
+              mess += "<li><strong>"+messages[i].nickname+" says: </strong>" +messages[i].message + " <small class='time'> " + messages[i].date + " </small></li>"
+            }
+            mess+="<hr>"
+            $('#previousMessages').html(mess);
+        }
+        //$('#messages').append("<li><strong> You are now connected </strong></li>")
+
+        
+      })
+        
+
+      })
+
+    	$('#messagesForm').submit(function(e){
+    		e.preventDefault();
+    		var message = $('#m').val();
+        if(message.trim() !== ""){
+      		socket.emit('new message', message)
+      		$('#m').val('');
+        }
+    	})
+
+    	socket.on('load message', function(mess){
+        if(mess !== ""){
+      		$('#messages').append("<li><strong>" + mess.nickname + " says: </strong>" + mess.message + " <small class='time'> " + mess.date + " </small></li>");
+          $('#messages').scrollTop($('#messages')[0].scrollHeight);
+        }
+
+    	})
+    </script>
+  </body>
+</html>
