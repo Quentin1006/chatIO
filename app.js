@@ -43,14 +43,13 @@ io.sockets.on('connection', function(socket){
 		console.log(data)
 		var d = new Date();
 		var time = d.getHours() + ":" + d.getMinutes()
-		users[data.sender].emit('emit private message', {message: data.mess, nickname: socket.nickname, date:time }); 
-		users[socket.nickname].emit('emit private message', {message: data.mess, nickname: socket.nickname, date:time });
+		users[data.sender].emit('emit private message', {message: data.mess, sender: data.sender, receiver:data.receiver, date:time }); 
+		users[data.receiver].emit('emit private message', {message: data.mess, sender: data.sender, receiver:data.receiver, date:time });
 	})
 
 	socket.on('new user', function(data, callback){
 		//Si le username n'est pas utilisé
 		if(!(data in users) && data !== ""){
-		console.log(data)
 		callback(true, data);
 		socket.nickname = data
 		users[socket.nickname] = socket;
@@ -58,7 +57,7 @@ io.sockets.on('connection', function(socket){
 		//qui ne sont pas herité des prototype 
 		socket.broadcast.emit('alert connected', Object.keys(users))
 		io.sockets.emit('create user', Object.keys(users));
-		socket.emit('display messages', mess);
+		socket.emit('display messages', mess, data);
 		}
 		else{
 			callback(false);

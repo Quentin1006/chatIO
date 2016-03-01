@@ -11,12 +11,9 @@
       #messagesWrapper{
         width:85%;
       }
-      #messages, #previousMessages { width:50%;list-style-type: none; margin: 0; padding: 0; }
+      #messages, #previousMessages { width:100%;list-style-type: none; margin: 0; padding: 0; }
       #messages li, #previousMessages li { padding: 10px 15px; }
       #messages li:nth-child(odd), #previousMessages li:nth-child(odd) { background: #eee; }
-      #messages {
-        overflow:scroll;
-      }
       #container{
         width:700px;
         margin:0 auto;
@@ -35,12 +32,11 @@
       #userWrapper{
         float:right;
         border:1px #ccc solid;
-        border-radius: 10px;
+        border-radius: 5px;
         background:#f4f4f4;
         padding:10px;
-        margin-left:20px;
-        width:150px;
-        max-height:200px;
+        margin:0px 10px ;
+        width:14%;
         z-index:10;
       }
       .time{
@@ -48,9 +44,9 @@
 
       }
       .messageList{
-        width:85%;
-        height:400px;
-        overflow:scroll;
+        width:50%;
+        height:550px;
+        overflow-y:scroll;
       }
       a{
         text-decoration:none;
@@ -59,13 +55,13 @@
         width:300px;
         height:300px;
         position:absolute;
-        right:155px;
+        right:15%;
         border:solid 1px #ccc;
         background:#f4f4f4;
 
       }
       .messageArea{
-        overflow:scroll;
+        overflow-y:scroll;
         height:80%;
       }
 
@@ -74,6 +70,7 @@
         bottom:0px;
         width:75%;
         height:30px;
+        border:1px solid #000;
       }
       .sendPrivate{
         position:absolute;
@@ -81,6 +78,8 @@
         bottom:0px;
         height:30px;
         width:25%;
+        background-color:#000;
+        color:#fff;
       }
       .headerPrivate{
           border-bottom:solid 1px #ccc;
@@ -88,6 +87,10 @@
           font-size:14px;
           color:#000;
           background-color:#fff;
+      }
+      .headerPrivate .close{
+        position: absolute;
+        right:5px;
       }
       #welcomeUser{
         padding:15px;
@@ -150,29 +153,38 @@
             else{
                 $('body').append("<div class='chatWindow' id='"+$(this).html()+"'></div>")
                 $("#"+$(this).html()).css("top",height)
-                $("#"+$(this).html()).append("<p class='headerPrivate'>"+$(this).html()+"</p>").append("<div class='messageArea'></div>")
+                console.log($("#"+$(this).html()))
+                $("#"+$(this).html()).append("<p class='headerPrivate'><span class='privateReceiver'>"+ $(this).html() +"</span> <a href='' class='close'> &times; </a>").append("<div class='messageArea'></div>")
                 $("#"+$(this).html()).append("<form class='privateForm'><input type='text' class='privateMessage'/><button type='submit' class='sendPrivate'>Send</button></form>") 
             }
             
             socket.emit('init private convo', $(this).html(), function(message){
-              console.log(message)
+              $(".headerPrivate .close").click(function(e){
+                e.preventDefault();
+                $(this).parent().parent().css("display","none")
+              })
             })
              
           });
 
             $('body').on('submit', '.privateForm',function (e){
-              var privateChatId = $(this).prev().prev().html()
+
+              var privateChatId = $(this).prev().prev()
+              privateChatId = privateChatId[0].firstChild
+              privateChatId = $(privateChatId).html()
               e.preventDefault();
-              socket.emit("send private message", {mess:$('#'+privateChatId+' .privateMessage').val(), sender: $('#'+privateChatId+' .headerPrivate').html()}) 
+              socket.emit("send private message", {mess:$('#'+privateChatId+' .privateMessage').val(), receiver: $('#'+privateChatId+' .privateReceiver').html(), sender:$('#welcomeUser #connectedUser' ).html(), participant:[ $('#'+privateChatId+' .privateReceiver').html(), $('#welcomeUser #connectedUser').html()]}) 
                $('.privateMessage').val("");
             });
           
 
             socket.on("emit private message", function (privateMessage){
-              var privateChatId = privateMessage.nickname
-              console.log(privateChatId)
-              console.log("rendering message from the server")
-              $('#'+privateChatId+' .messageArea').append("<li><strong>"+privateMessage.nickname+" says: </strong>" +privateMessage.message + " <small class='time'> " + privateMessage.date + " </small></li>")
+              var privateChatId = privateMessage.sender
+              if(privateChatId !== $("connectedUser").html()){
+                $('#'+privateChatId + ', #'+ privateMessage.receiver).fadeIn()
+              }
+              
+              $('#'+privateChatId+' .messageArea, #'+privateMessage.receiver +' .messageArea').append("<li><strong>"+privateMessage.sender+" says: </strong>" +privateMessage.message + " <small class='time'> " + privateMessage.date + " </small></li>")
             })
        
 
@@ -203,28 +215,26 @@
       socket.on('create user', function (users){
         var html='';
         for (var i=0; i< users.length;i++){
-          
+          if($("#connectedUser").html() !== users[i]){
             html+= "<a class='singleUser' href='#'>"+users[i] +"</a><br>"
+          }
           
         }
         $('#users').html(html);
 
-      socket.on('display messages', function (messages){
+      socket.on('display messages', function (messages, connectingUser){
          var mess="";
          if(messages != []){
             for (var i=0; i< messages.length;i++){
-              console.log("il y a bien des messages")
               mess += "<li><strong>"+messages[i].nickname+" says: </strong>" +messages[i].message + " <small class='time'> " + messages[i].date + " </small></li>"
             }
             mess+="<hr>"
             $('#previousMessages').html(mess);
         }
+
+        })
         //$('#messages').append("<li><strong> You are now connected </strong></li>")
-
-        
-      })
-        
-
+  
       })
 
     	$('#messagesForm').submit(function(e){
