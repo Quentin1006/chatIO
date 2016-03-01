@@ -58,6 +58,7 @@
         right:15%;
         border:solid 1px #ccc;
         background:#f4f4f4;
+        display:block;
 
       }
       .messageArea{
@@ -149,16 +150,14 @@
             }
             else{
                 // Create the private chat window when clicking on the name of the online user
-                $('body').append("<div class='chatWindow' id='"+$(this).html()+"'></div>")
+                $('body').append("<div class='chatWindow' id='"+$(this).html()+"'><p class='headerPrivate'><span class='privateReceiver'>"+ $(this).html() +"</span> <a href='' class='close'> &times; </a></p><div class='messageArea'></div><form class='privateForm'><input type='text' class='privateMessage'/><button type='submit' class='sendPrivate'>Send</button></form></div>")
                 //adjust the height of the window to be next to the name of the user we talk to
                 $("#"+$(this).html()).css("top",height)
-                $("#"+$(this).html()).append("<p class='headerPrivate'><span class='privateReceiver'>"+ $(this).html() +"</span> <a href='' class='close'> &times; </a>").append("<div class='messageArea'></div>")
-                $("#"+$(this).html()).append("<form class='privateForm'><input type='text' class='privateMessage'/><button type='submit' class='sendPrivate'>Send</button></form>") 
             }
             
             socket.emit('init private convo', $(this).html(), function(message){
               //Close the private chat window when clicking on the cross
-              $(".headerPrivate .close").click(function (e){
+              $(".chatWindow .close").click(function (e){
                 e.preventDefault();
                 $(this).parent().parent().css("display","none")
               })
@@ -181,13 +180,36 @@
             // Receiving the private message sent from the server
             socket.on("emit private message", function (privateMessage){
               // privateMessage object containing message, sender, receiver, time and participants
-              var privateChatId = privateMessage.sender
+              var emitter = privateMessage.sender
+              var receiver = privateMessage.receiver
               // Make sure only the receiver chat window opens, so he receives the message
-              if(privateChatId !== $("connectedUser").html()){
-                //May want to implement here the creation of the private chat window
-                $('#'+privateChatId + ', #'+ privateMessage.receiver).fadeIn()
-              }
-              $('#'+privateChatId+' .messageArea, #'+privateMessage.receiver +' .messageArea').append("<li><strong>"+privateMessage.sender+" says: </strong>" +privateMessage.message + " <small class='time'> " + privateMessage.date + " </small></li>")
+              console.log("emitter= "+ emitter)
+              console.log("receiver= "+ receiver)
+                if(document.getElementById(receiver) || document.getElementById(emitter)) {
+                  
+                  console.log("passe par ici")
+                $('#'+emitter + ', #'+ receiver).fadeIn()
+                }
+                else{
+                    // Create the private chat window when clicking on the name of the online user
+                    $('body').append("<div class='chatWindow' id='"+emitter+"'><p class='headerPrivate'><span class='privateReceiver'>"+ emitter +"</span> <a href='' class='close'> &times; </a></p><div class='messageArea'></div><form class='privateForm'><input type='text' class='privateMessage'/><button type='submit' class='sendPrivate'>Send</button></form></div>")
+                    //adjust the height of the window to be next to the name of the user we talk to
+                    var elt = document.querySelectorAll('.singleUser')
+                    for (var i=0; i<elt.length ; i++){
+                        if(elt[i].innerHTML == emitter){
+                          var height = $(elt[i]).offset().top
+                        }
+                    }
+                    $("#"+emitter).css("top", height)
+                }
+                $(".chatWindow .close").click(function(e){
+                  e.preventDefault();
+                  $(this).parent().parent().css("display","none")
+
+                })
+                
+              $('#'+emitter+' .messageArea, #'+receiver +' .messageArea').append("<li><strong>"+privateMessage.sender+" says: </strong>" +privateMessage.message + " <small class='time'> " + privateMessage.date + " </small></li>")
+              
             })
 
       // Add a new user on the chat 
