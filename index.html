@@ -135,14 +135,11 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
 
-          
-      
-      
+    	 //load the socket.io-client
+        var socket = io();
 
-    	//load the socket.io-client
-    	var socket = io();
-
-          $('body').on('click','a.singleUser', function (e){
+          // initiate a private chat
+        $('body').on('click','a.singleUser', function (e){
             var privateChatId = $(this).html();
             $('.chatWindow').hide()
             
@@ -151,67 +148,70 @@
               $("#"+$(this).html()).show()
             }
             else{
+                // Create the private chat window when clicking on the name of the online user
                 $('body').append("<div class='chatWindow' id='"+$(this).html()+"'></div>")
+                //adjust the height of the window to be next to the name of the user we talk to
                 $("#"+$(this).html()).css("top",height)
-                console.log($("#"+$(this).html()))
                 $("#"+$(this).html()).append("<p class='headerPrivate'><span class='privateReceiver'>"+ $(this).html() +"</span> <a href='' class='close'> &times; </a>").append("<div class='messageArea'></div>")
                 $("#"+$(this).html()).append("<form class='privateForm'><input type='text' class='privateMessage'/><button type='submit' class='sendPrivate'>Send</button></form>") 
             }
             
             socket.emit('init private convo', $(this).html(), function(message){
-              $(".headerPrivate .close").click(function(e){
+              //Close the private chat window when clicking on the cross
+              $(".headerPrivate .close").click(function (e){
                 e.preventDefault();
                 $(this).parent().parent().css("display","none")
               })
             })
-             
-          });
+        });
 
+            // When sending a private message to another user
             $('body').on('submit', '.privateForm',function (e){
 
               var privateChatId = $(this).prev().prev()
               privateChatId = privateChatId[0].firstChild
               privateChatId = $(privateChatId).html()
+              // privateChatId gets the id of the specific chat window
               e.preventDefault();
+              // Send the object {mess:"",sender:"",receiver:"",participant:""} to the server 
               socket.emit("send private message", {mess:$('#'+privateChatId+' .privateMessage').val(), receiver: $('#'+privateChatId+' .privateReceiver').html(), sender:$('#welcomeUser #connectedUser' ).html(), participant:[ $('#'+privateChatId+' .privateReceiver').html(), $('#welcomeUser #connectedUser').html()]}) 
                $('.privateMessage').val("");
             });
           
-
+            // Receiving the private message sent from the server
             socket.on("emit private message", function (privateMessage){
+              // privateMessage object containing message, sender, receiver, time and participants
               var privateChatId = privateMessage.sender
+              // Make sure only the receiver chat window opens, so he receives the message
               if(privateChatId !== $("connectedUser").html()){
+                //May want to implement here the creation of the private chat window
                 $('#'+privateChatId + ', #'+ privateMessage.receiver).fadeIn()
               }
-              
               $('#'+privateChatId+' .messageArea, #'+privateMessage.receiver +' .messageArea').append("<li><strong>"+privateMessage.sender+" says: </strong>" +privateMessage.message + " <small class='time'> " + privateMessage.date + " </small></li>")
             })
-       
 
-            
-      
-
+      // Add a new user on the chat 
       $('#usernameForm').submit(function(e){
-        e.preventDefault();
-        socket.emit('new user', $('#username').val(), function(bool, user){
-          if(bool == true){
-            $("#container").fadeOut();
-            $("#messagesWrapper").fadeIn();
-            $("#welcomeUser").html("<h1>Welcome <span id='connectedUser'>"+ user +"</span></h1>")
-          }
-          else{
-            $('#error').html('Username already taken...')
-          }
-
-
+            e.preventDefault();
+            socket.emit('new user', $('#username').val(), function(bool, user){
+            // if the nickname is accepted
+            if(bool == true){
+              $("#container").fadeOut();
+              $("#messagesWrapper").fadeIn();
+              // identify the username picked by the socket
+              $("#welcomeUser").html("<h1>Welcome <span id='connectedUser'>"+ user +"</span></h1>")
+            }
+            else{
+              $('#error').html('Username already taken...')
+            }
         });
-
       })
+
+      // let others know that the user connected to the chat
       socket.on('alert connected', function (users){
-        console.log("alert connected")
         $('#messages').append("<li><strong>"+users[users.length-1]+ " is connected </strong></li>")
       })
-
+      // update the online list for every users
       socket.on('create user', function (users){
         var html='';
         for (var i=0; i< users.length;i++){
@@ -221,7 +221,9 @@
           
         }
         $('#users').html(html);
+       })
 
+      // displays the 10 last messages before the users connects
       socket.on('display messages', function (messages, connectingUser){
          var mess="";
          if(messages != []){
@@ -230,25 +232,29 @@
             }
             mess+="<hr>"
             $('#previousMessages').html(mess);
-        }
+          }
 
-        })
+      })
         //$('#messages').append("<li><strong> You are now connected </strong></li>")
   
-      })
+     
 
+      // Sends a public message in the chat room
     	$('#messagesForm').submit(function(e){
     		e.preventDefault();
     		var message = $('#m').val();
+        // make sure blank messages are not sent
         if(message.trim() !== ""){
       		socket.emit('new message', message)
       		$('#m').val('');
         }
-    	})
+    	}) // End of the submit messageForm
 
+      // display the message on the client side
     	socket.on('load message', function(mess){
         if(mess !== ""){
       		$('#messages').append("<li><strong>" + mess.nickname + " says: </strong>" + mess.message + " <small class='time'> " + mess.date + " </small></li>");
+          // scrolling down to the last message (not working atm)
           $('#messages').scrollTop($('#messages')[0].scrollHeight);
         }
 
