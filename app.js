@@ -58,19 +58,32 @@ io.sockets.on('connection', function(socket){
 	})
 
 	socket.on('new user', function(data, callback){
+		var re = new RegExp("cyril","i");
 		//Si le username n'est pas utilisé
-		if(!(data in users) && data !== ""){
-		callback(true, data);
-		socket.nickname = data
-		users[socket.nickname] = socket;
-		// Object.keys(users) renvoie toutes les propriétés propre a l'objet, 
-		//qui ne sont pas herité des prototype 
-		socket.broadcast.emit('alert connected', Object.keys(users))
-		io.sockets.emit('create user', Object.keys(users));
-		socket.emit('display messages', mess, data);
+		if(data in users){
+			callback("This username is already taken...");
+		}
+		else if(data.trim() == ""){
+			callback("Great idea using a blank nickname...");
+		}
+		else if(!data.match(/^[a-z0-9'_-]*$/)){
+			callback("Your nickname should contain only letter, digits, underscore, middlescore...")
+		}
+		else if(data.trim().match(re) || data.trim().match(/leo/i)){
+			callback("Sorry your nickname is too lame to get in...")
+		}
+		else if(data.trim().match(/<[a-z]+>/)){
+			callback("No html code please !")
 		}
 		else{
-			callback(false);
+			callback(true, data);
+			socket.nickname = data
+			users[socket.nickname] = socket;
+			// Object.keys(users) renvoie toutes les propriétés propre a l'objet, 
+			//qui ne sont pas herité des prototype 
+			socket.broadcast.emit('alert connected', Object.keys(users))
+			io.sockets.emit('create user', Object.keys(users));
+			socket.emit('display messages', mess, data);
 		}
 	})
 

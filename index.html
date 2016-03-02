@@ -272,7 +272,7 @@
 
                 })
                 
-              $('#'+emitter+' .messageArea, #'+receiver +' .messageArea').append("<li><strong>"+privateMessage.sender + "<small class='time'> -" + privateMessage.date + " </small>:</strong> " + privateMessage.message + "</li>")
+              $('#'+emitter+' .messageArea, #'+receiver +' .messageArea').append("<li><strong>"+privateMessage.sender + "</strong><small class='time'> - (" + privateMessage.date + ") </small>: " + privateMessage.message + "</li>")
               $('.messageList').scrollTop($('.messageList')[0].scrollHeight);
 
               
@@ -281,16 +281,17 @@
       // Add a new user on the chat 
       $('#usernameForm').submit(function(e){
             e.preventDefault();
-            socket.emit('new user', $('#username').val(), function(bool, user){
+            socket.emit('new user', $('#username').val(), function(bool,data){
             // if the nickname is accepted
             if(bool == true){
               $("#container").fadeOut();
               $("#messagesWrapper, #userWrapper").fadeIn();
               // identify the username picked by the socket
-              $("#welcomeUser").html("<h1>Welcome <span id='connectedUser'>"+ user +"</span></h1>")
+              $("#welcomeUser").html("<h1>Welcome <span id='connectedUser'>"+ data +"</span></h1>")
             }
             else{
-              $('#error').html('Username already taken...')
+              $('#error').html(bool)
+              $('#username').val("")
             }
         });
       })
@@ -315,8 +316,8 @@
       socket.on('display messages', function (messages, connectingUser){
          var mess="";
          if(messages != []){
-            for (var i=0; i< messages.length;i++){
-              mess += "<li><strong>"+messages[i].nickname+" says: </strong>" +messages[i].message + " <small class='time'> - " + messages[i].date + " </small></li>"
+            for (var i=0; i< messages.length; i++){
+              mess += "<li><strong>"+messages[i].nickname+": </strong>" +messages[i].message + " <small class='time'> - at " + messages[i].date + " </small></li>"
             }
             mess+="<hr>"
             $('#previousMessages').html(mess);
@@ -341,7 +342,7 @@
       // display the message on the client side
     	socket.on('load message', function(mess){
         if(mess !== ""){
-      		$('#messages').append("<li><strong>" + mess.nickname + " says: </strong>" + mess.message + " <small class='time'> - " + mess.date + " </small></li>");
+      		$('#messages').append("<li><strong>" + mess.nickname + ": </strong>" + mess.message + " <small class='time'> - at " + mess.date + " </small></li>");
           // scrolling down to the last message (not working atm)
           $('.messageList').scrollTop($('.messageList')[0].scrollHeight);
         }
