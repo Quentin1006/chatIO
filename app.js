@@ -1,9 +1,13 @@
-var app = require('express')();
+var express = require('express');
+var app = express();
+var path = require('path');
 var server = require('http').Server(app)
 var io = require('socket.io').listen(server)
 
 var mess = [];
 var users = {};
+
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', function(req,res){
 	res.sendFile(__dirname+'/index.html');
@@ -13,15 +17,21 @@ server.listen(process.env.PORT || 3000, function(){
 	console.log("listening on *:3000")
 })
 
+function fixTime(arg){
+	if (arg <10){
+		arg = "0"+arg;
+	}
+	return arg
+}
 
 io.sockets.on('connection', function(socket){
 
 	socket.on('new message', function(data){
 		if(data !== ""){
 		var d = new Date();
-		var time = d.getHours() + ":" + d.getMinutes()
+		var time = fixTime(d.getHours()) + ":" + fixTime(d.getMinutes());
 		mess.push({message:data, nickname: socket.nickname, date:time})
-		io.sockets.emit('load message', {message:data, nickname: socket.nickname, date:time });
+		io.sockets.emit('load message', {message:data, nickname: socket.nickname, date:time});
 		}
 		if(mess.length>10){
 			mess.shift()

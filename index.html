@@ -2,29 +2,60 @@
 <html>
   <head>
     <title>Socket.IO chat</title>
+    <link rel="stylesheet" href="bower_components/bootstrap/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
     <style>
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      * { 
+        padding: 0;
+        box-sizing: border-box; 
+      }
       body { font: 13px Helvetica, Arial; }
-      form#messagesForm { background: #000; padding: 3px; width: 50%;clear:both; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+
+      form#messagesForm { 
+        background: #000; 
+        
+        width: 50%;
+        clear:both;
+        margin:0px 10px ; 
+        border:1px solid #ccc;
+        border-top: 0;
+        z-index: 3
+      }
+
+      form input { 
+        border: 2px solid #ccc; 
+        border-top: 0;
+        padding: 10px; 
+        width: 80%; 
+      }
+
+      form button { 
+        width: 20%; 
+        background: #000; 
+        color:#fff; 
+        border: none; 
+        padding: 10px; 
+      }
+
       #messagesWrapper{
         width:85%;
       }
       #messages, #previousMessages { width:100%;list-style-type: none; margin: 0; padding: 0; }
       #messages li, #previousMessages li { padding: 10px 15px; }
       #messages li:nth-child(odd), #previousMessages li:nth-child(odd) { background: #eee; }
+      
       #container{
-        width:700px;
-        margin:0 auto;
       }
       #namesWrapper{
-        float:left;
+        position :relative;
+        top: 100px;
+        width:380px;
+        margin: 0 auto;
         border:1px #ccc solid;
-        border-radius: 10px;
         background:#f4f4f4;
-        padding:10px;
-        margin-left:20px;
+        padding:20px;
+        text-align: center;
+
       }
       #messagesWrapper{
         display:none;
@@ -32,12 +63,18 @@
       #userWrapper{
         float:right;
         border:1px #ccc solid;
-        border-radius: 5px;
+        border-radius: 0px;
         background:#f4f4f4;
         padding:10px;
         margin:0px 10px ;
         width:14%;
         z-index:10;
+        text-align:center;
+        display:none;
+      }
+      #users{
+        font-size: 16px;
+        padding:3px;
       }
       .time{
         position:relative;
@@ -45,8 +82,11 @@
       }
       .messageList{
         width:50%;
-        height:550px;
+        height:530px;
         overflow-y:scroll;
+        border: 1px solid #ccc;
+        margin:10px 10px 0 10px;
+        word-wrap: break-word
       }
       a{
         text-decoration:none;
@@ -64,6 +104,10 @@
       .messageArea{
         overflow-y:scroll;
         height:80%;
+      }
+      .messageArea li {
+        list-style: none; 
+        margin:5px 10px;
       }
 
       .privateMessage{
@@ -89,24 +133,31 @@
           color:#000;
           background-color:#fff;
       }
+      
       .headerPrivate .close{
         position: absolute;
         right:5px;
       }
+
       #welcomeUser{
         padding:15px;
         margin:10px;
         background-color: #f4f4f4;
         border: 1px solid #ccc;
-        border-radius:5px;
 
+      }
+      .user{
+        padding: 3px;
+        padding-left:10px;
+        border-radius:3px;
+        text-align: left
       }
     </style>
   </head>
   <body>
     <div id="container">
       <div id="namesWrapper">
-        <h2>ChatIO</h2>
+        <h1>ChatIO</h1>
         <p>Create Username:</p>
         <div id="error"></div>
         <form id="usernameForm">
@@ -117,7 +168,7 @@
     </div>
 
     <div id="userWrapper">
-          <b>Online: </b><br/>
+          <h3>Online: </h3><br/>
           <div id="users">
           </div>
     </div>
@@ -129,12 +180,21 @@
     <ul id="messages"></ul>
     </div>
     <form id="messagesForm" action="">
-      <input id="m" autocomplete="off" /><button>Send</button>
+      <input id="m" autocomplete="off" placeholder="Send your message..."/><button>Send</button>
     </form>
   </div>
-    <script src="https://code.jquery.com/jquery-1.12.0.js"></script>
+    <script src="./bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="../bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script>
+      $(window).on('load resize', function(){
+          var windowWidth = $("body").width();
+          var windowHeight = $(window).height();
+          console.log(windowHeight)
+          $("#container").css("width",windowWidth).css("height",windowHeight)
+          
+      })
+     
 
     	 //load the socket.io-client
         var socket = io();
@@ -154,12 +214,13 @@
                 //adjust the height of the window to be next to the name of the user we talk to
                 $("#"+$(this).html()).css("top",height)
             }
+            $('.privateMessage').focus();
             
             socket.emit('init private convo', $(this).html(), function(message){
               //Close the private chat window when clicking on the cross
               $(".chatWindow .close").click(function (e){
                 e.preventDefault();
-                $(this).parent().parent().css("display","none")
+                $(this).parent().parent().css("display","none");
               })
             })
         });
@@ -186,9 +247,7 @@
               console.log("emitter= "+ emitter)
               console.log("receiver= "+ receiver)
                 if(document.getElementById(receiver) || document.getElementById(emitter)) {
-                  
-                  console.log("passe par ici")
-                $('#'+emitter + ', #'+ receiver).fadeIn()
+                    $('#'+emitter + ', #'+ receiver).fadeIn()
                 }
                 else{
                     // Create the private chat window when clicking on the name of the online user
@@ -208,7 +267,9 @@
 
                 })
                 
-              $('#'+emitter+' .messageArea, #'+receiver +' .messageArea').append("<li><strong>"+privateMessage.sender+" says: </strong>" +privateMessage.message + " <small class='time'> " + privateMessage.date + " </small></li>")
+              $('#'+emitter+' .messageArea, #'+receiver +' .messageArea').append("<li><strong>"+privateMessage.sender + "<small class='time'> -" + privateMessage.date + " </small>:</strong> " + privateMessage.message + "</li>")
+              $('.messageList').scrollTop($('.messageList')[0].scrollHeight);
+
               
             })
 
@@ -219,7 +280,7 @@
             // if the nickname is accepted
             if(bool == true){
               $("#container").fadeOut();
-              $("#messagesWrapper").fadeIn();
+              $("#messagesWrapper, #userWrapper").fadeIn();
               // identify the username picked by the socket
               $("#welcomeUser").html("<h1>Welcome <span id='connectedUser'>"+ user +"</span></h1>")
             }
@@ -238,7 +299,7 @@
         var html='';
         for (var i=0; i< users.length;i++){
           if($("#connectedUser").html() !== users[i]){
-            html+= "<a class='singleUser' href='#'>"+users[i] +"</a><br>"
+            html+= "<div class='user'><span class='glyphicon glyphicon-user'>&nbsp;</span><a class='singleUser' href='#'>"+ users[i] +"</a><br></div>"
           }
           
         }
@@ -250,7 +311,7 @@
          var mess="";
          if(messages != []){
             for (var i=0; i< messages.length;i++){
-              mess += "<li><strong>"+messages[i].nickname+" says: </strong>" +messages[i].message + " <small class='time'> " + messages[i].date + " </small></li>"
+              mess += "<li><strong>"+messages[i].nickname+" says: </strong>" +messages[i].message + " <small class='time'> - " + messages[i].date + " </small></li>"
             }
             mess+="<hr>"
             $('#previousMessages').html(mess);
@@ -275,9 +336,9 @@
       // display the message on the client side
     	socket.on('load message', function(mess){
         if(mess !== ""){
-      		$('#messages').append("<li><strong>" + mess.nickname + " says: </strong>" + mess.message + " <small class='time'> " + mess.date + " </small></li>");
+      		$('#messages').append("<li><strong>" + mess.nickname + " says: </strong>" + mess.message + " <small class='time'> - " + mess.date + " </small></li>");
           // scrolling down to the last message (not working atm)
-          $('#messages').scrollTop($('#messages')[0].scrollHeight);
+          $('.messageList').scrollTop($('.messageList')[0].scrollHeight);
         }
 
     	})
