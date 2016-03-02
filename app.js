@@ -27,7 +27,7 @@ function fixTime(arg){
 io.sockets.on('connection', function(socket){
 
 	socket.on('new message', function(data){
-		if(data !== ""){
+		if(data.trim() !== ""){
 		var d = new Date();
 		var time = fixTime(d.getHours()) + ":" + fixTime(d.getMinutes());
 		mess.push({message:data, nickname: socket.nickname, date:time})
