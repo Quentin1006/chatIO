@@ -1,0 +1,25 @@
+{
+  "name": "io.sockets",
+  "description": "chat",
+  "main": "app.js",
+  "authors": [
+    "quentin"
+  ],
+  "license": "ISC",
+  "keywords": [
+    "chat",
+    "socket"
+  ],
+  "moduleType": [],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "font-awesome": "fontawesome#^4.5.0",
+    "bootstrap": "^3.3.6"
+  }
+}
